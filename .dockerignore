@@ -1,0 +1,17 @@
+.git
+.github
+.pytest_cache
+.coverage
+build
+dist
+web/node_modules
+web/dist
+web/test-results
+clients/typescript/node_modules
+.terraform
+*.tfstate
+*.tfstate.*
+__pycache__
+*.pyc
+*.db
+data/evidence

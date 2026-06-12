@@ -1,0 +1,3 @@
+case_id,assessment,split,observed_incident,expert_score,context,provenance
+case-001,assessments/case-001.yaml,train,0,75,ai_system,independent expert panel
+case-002,assessments/case-002.yaml,validation,1,35,ai_system,incident review

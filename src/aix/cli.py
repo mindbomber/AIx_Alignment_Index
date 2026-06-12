@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from .calibration import calibrate_dataset, calibration_markdown
 from .io import load_document, write_text
 from .models import AssessmentValidationError, validate_assessment
 from .reliability import analyze_reliability, read_ratings_csv, reliability_markdown
@@ -61,6 +62,13 @@ def build_parser() -> argparse.ArgumentParser:
     reliability.add_argument("ratings")
     reliability.add_argument("--out")
     reliability.add_argument("--format", choices=["json", "markdown"], default="json")
+
+    calibration = subparsers.add_parser(
+        "calibrate", help="Calibrate penalties and validate criterion outcomes"
+    )
+    calibration.add_argument("dataset")
+    calibration.add_argument("--out")
+    calibration.add_argument("--format", choices=["json", "markdown"], default="json")
 
     chart = subparsers.add_parser("chart", help="Generate publication-friendly charts")
     chart.add_argument("assessment")
@@ -121,6 +129,17 @@ def main(argv: list[str] | None = None) -> int:
             result = analyze_reliability(read_ratings_csv(args.ratings))
             content = (
                 reliability_markdown(result)
+                if args.format == "markdown"
+                else json.dumps(result.to_dict(), indent=2) + "\n"
+            )
+            if args.out:
+                print(write_text(args.out, content))
+            else:
+                print(content, end="")
+        elif args.command == "calibrate":
+            result = calibrate_dataset(args.dataset)
+            content = (
+                calibration_markdown(result)
                 if args.format == "markdown"
                 else json.dumps(result.to_dict(), indent=2) + "\n"
             )

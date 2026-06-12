@@ -1,0 +1,52 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from aix_platform.app import create_app
+
+
+def canonicalize(document: dict) -> dict:
+    for path_item in document.get("paths", {}).values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            response = operation.get("responses", {}).get("422")
+            if isinstance(response, dict):
+                response["description"] = "Unprocessable Content"
+    return document
+
+
+def render_openapi() -> str:
+    document = canonicalize(create_app(create_schema=False).openapi())
+    return json.dumps(document, indent=2, sort_keys=True) + "\n"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Export the AIx Platform OpenAPI contract")
+    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--out", default="spec/openapi.json")
+    args = parser.parse_args()
+    destination = Path(args.out)
+    rendered = render_openapi()
+    if args.check:
+        if not destination.is_file():
+            raise SystemExit(
+                f"{destination} is stale; run python scripts/export_openapi.py"
+            )
+        try:
+            current = json.loads(destination.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"{destination} is not valid JSON: {exc}") from exc
+        if current != json.loads(rendered):
+            raise SystemExit(
+                f"{destination} is stale; run python scripts/export_openapi.py"
+            )
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(rendered, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()

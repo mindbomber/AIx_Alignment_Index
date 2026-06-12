@@ -1,6 +1,8 @@
 # Validation Roadmap
 
-AIx is implementable but not yet empirically validated.
+AIx includes a reproducible calibration and criterion-validation pipeline, but
+the bundled development benchmark is not an independent empirical validation.
+External data collection and replication remain required for validity claims.
 
 ## Phase 1: Content and Anchor Refinement
 
@@ -34,4 +36,3 @@ real failures. Calibrate penalty parameters using held-out cases.
 
 Version rubrics, publish calibration datasets, rotate indicators where gaming emerges,
 and require independent audits for consequential use.
-

@@ -1,9 +1,27 @@
-include LICENSE README.md CHANGELOG.md CITATION.cff CODE_OF_CONDUCT.md CONTRIBUTING.md SECURITY.md
+include LICENSE README.md CHANGELOG.md CITATION.cff CODE_OF_CONDUCT.md CONTRIBUTING.md SECURITY.md SUPPORT.md
+include .env.example .env.staging.example
 recursive-include docs *.md
 recursive-include examples *.yaml *.csv *.md *.json *.html *.png *.svg
+recursive-include datasets *.csv *.md
 recursive-include notebooks *.ipynb *.md
 recursive-include papers *.pdf *.md
 recursive-include rubrics *.yaml
 recursive-include spec *.yaml *.json
 recursive-include tests *.py
-recursive-include scripts *.ps1
+include alembic.ini Dockerfile compose.yaml
+recursive-include migrations *.py *.mako README
+recursive-include scripts *.ps1 *.py *.sh
+recursive-include deploy *.yaml *.md
+recursive-include deploy *.tf *.hcl
+include clients/typescript/package.json clients/typescript/package-lock.json clients/typescript/tsconfig.json
+recursive-include clients/typescript/src *.ts
+include web/package.json web/package-lock.json web/tsconfig.json web/tsconfig.app.json web/tsconfig.node.json web/vite.config.ts web/eslint.config.js web/index.html
+recursive-include web/src *.ts *.tsx *.css
+recursive-include web/e2e *.ts
+recursive-include web/public *
+prune clients/typescript/node_modules
+prune web/node_modules
+prune web/dist
+prune web/test-results
+prune web/playwright-report
+prune deploy/terraform/aws/.terraform

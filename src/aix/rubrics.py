@@ -40,4 +40,3 @@ def load_rubric(name: str, *, resolve: bool = True) -> dict[str, Any]:
                 indicator["contextual_anchors"] = overrides[code]
     resolved["inheritance_resolved"] = True
     return resolved
-    return data

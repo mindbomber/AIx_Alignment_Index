@@ -1,0 +1,151 @@
+name: staging-acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      AIX_E2E_ORG: ${{ secrets.AIX_E2E_ORG }}
+      AIX_E2E_EMAIL: ${{ secrets.AIX_E2E_EMAIL }}
+      AIX_E2E_PASSWORD: ${{ secrets.AIX_E2E_PASSWORD }}
+      AIX_STAGING_ACCEPTANCE: "true"
+      AIX_WEB_URL: http://127.0.0.1:5173
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: python -m pip install -e ".[platform]"
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - name: Configure Kubernetes credentials
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+        run: |
+          test -n "$KUBECONFIG_B64"
+          mkdir -p "$HOME/.kube"
+          printf '%s' "$KUBECONFIG_B64" | base64 --decode > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+      - name: Verify deployed workloads and migration
+        run: |
+          kubectl rollout status deployment/aix-api-staging \
+            --namespace aix-staging --timeout=10m
+          kubectl rollout status deployment/aix-worker-staging \
+            --namespace aix-staging --timeout=10m
+          kubectl rollout status deployment/aix-web-staging \
+            --namespace aix-staging --timeout=10m
+          test "$(
+            kubectl get job aix-migrate-staging \
+              --namespace aix-staging \
+              --output jsonpath='{.status.succeeded}'
+          )" = "1"
+      - name: Forward staging services
+        run: |
+          kubectl --namespace aix-staging port-forward \
+            service/aix-api-staging 8000:8000 >api-port-forward.log 2>&1 &
+          kubectl --namespace aix-staging port-forward \
+            service/aix-web-staging 5173:80 >web-port-forward.log 2>&1 &
+          # shellcheck disable=SC2034
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8000/health/ready &&
+              curl --fail --silent http://127.0.0.1:5173 >/dev/null &&
+              exit 0
+            sleep 2
+          done
+          cat api-port-forward.log web-port-forward.log
+          exit 1
+      - name: Live security probes
+        run: |
+          python scripts/security_probe.py \
+            --base-url http://127.0.0.1:8000 \
+            --organization "$AIX_E2E_ORG" \
+            --email "$AIX_E2E_EMAIL" \
+            --password "$AIX_E2E_PASSWORD"
+      - name: Authenticated load gate
+        run: |
+          TOKEN="$(
+            python -c "import httpx, os; print(httpx.post('http://127.0.0.1:8000/v1/auth/login', json={'organization_slug':os.environ['AIX_E2E_ORG'],'email':os.environ['AIX_E2E_EMAIL'],'password':os.environ['AIX_E2E_PASSWORD']}).json()['access_token'])"
+          )"
+          python scripts/load_smoke.py \
+            --base-url http://127.0.0.1:8000 \
+            --token "$TOKEN" \
+            --requests 1000 \
+            --concurrency 25 \
+            --max-error-rate 0.01 \
+            --max-p95-ms 1500
+      - name: Browser and accessibility acceptance
+        run: npx playwright test e2e/staging.spec.ts
+        working-directory: web
+      - name: Database restore drill inside the cluster
+        run: |
+          kubectl delete pod aix-db-restore-drill \
+            --namespace aix-staging --ignore-not-found
+          cat <<'YAML' | kubectl apply -f -
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: aix-db-restore-drill
+            namespace: aix-staging
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: drill
+                image: postgres:17-alpine
+                env:
+                  - name: AIX_DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: aix-secrets
+                        key: AIX_DATABASE_URL
+                command: ["/bin/sh", "-ec"]
+                args:
+                  - |
+                    url="$(printf '%s' "$AIX_DATABASE_URL" | sed 's#postgresql+psycopg:#postgresql:#')"
+                    base="${url%%\?*}"
+                    database="${base##*/}"
+                    server="${base%/*}"
+                    restore_database="${database}_restore_drill"
+                    backup="$(mktemp)"
+                    cleanup() {
+                      rm -f "$backup"
+                      dropdb --if-exists --maintenance-db="$server/postgres" "$restore_database" >/dev/null 2>&1 || true
+                    }
+                    trap cleanup EXIT
+                    pg_dump --format=custom --file="$backup" "$url"
+                    dropdb --if-exists --maintenance-db="$server/postgres" "$restore_database"
+                    createdb --maintenance-db="$server/postgres" "$restore_database"
+                    restore_url="$server/$restore_database"
+                    pg_restore --exit-on-error --no-owner --dbname="$restore_url" "$backup"
+                    test "$(psql --tuples-only --no-align "$restore_url" --command='select count(*) from alembic_version')" = "1"
+                    test "$(psql --tuples-only --no-align "$restore_url" --command=\"select count(*) from information_schema.tables where table_schema='public'\")" -ge "10"
+                    echo "Staging database restore drill passed."
+          YAML
+          kubectl wait --for=jsonpath='{.status.phase}'=Succeeded \
+            pod/aix-db-restore-drill \
+            --namespace aix-staging \
+            --timeout=10m
+          kubectl logs pod/aix-db-restore-drill --namespace aix-staging
+      - name: Object-storage restore drill inside the API pod
+        run: |
+          # shellcheck disable=SC2016
+          kubectl exec deployment/aix-api-staging \
+            --namespace aix-staging \
+            --container api -- \
+            sh -ec 'python /app/scripts/s3_restore_drill.py \
+              --bucket "$AIX_S3_BUCKET" \
+              --region "$AIX_S3_REGION" \
+              ${AIX_S3_ENDPOINT_URL:+--endpoint-url "$AIX_S3_ENDPOINT_URL"}'

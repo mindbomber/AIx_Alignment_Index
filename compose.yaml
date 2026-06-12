@@ -1,0 +1,159 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: aix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-aix-password}
+      POSTGRES_DB: aix
+    volumes:
+      - aix-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aix"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.2.7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - aix-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: quay.io/minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-aix-local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-aix-local-secret}
+    volumes:
+      - aix-minio:/data
+    ports:
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+        mc mb --ignore-existing local/aix-evidence
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-aix-local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-aix-local-secret}
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  clamav:
+    image: clamav/clamav:1.5.2
+    volumes:
+      - aix-clamav:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  migrate:
+    build: .
+    command: ["aix-db", "upgrade", "head"]
+    environment:
+      AIX_DATABASE_URL: postgresql+psycopg://aix:${POSTGRES_PASSWORD:-local-aix-password}@postgres:5432/aix
+      AIX_TOKEN_PEPPER: ${AIX_TOKEN_PEPPER:-development-only-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    environment:
+      AIX_DATABASE_URL: postgresql+psycopg://aix:${POSTGRES_PASSWORD:-local-aix-password}@postgres:5432/aix
+      AIX_TOKEN_PEPPER: ${AIX_TOKEN_PEPPER:-development-only-change-me}
+      AIX_WEBHOOK_SECRET_PEPPER: ${AIX_WEBHOOK_SECRET_PEPPER:-development-webhook-pepper}
+      AIX_CORS_ORIGINS: ${AIX_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      AIX_REDIS_URL: redis://redis:6379/0
+      AIX_STORAGE_BACKEND: s3
+      AIX_S3_BUCKET: aix-evidence
+      AIX_S3_ENDPOINT_URL: http://minio:9000
+      AIX_S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-aix-local}
+      AIX_S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-aix-local-secret}
+      AIX_S3_SERVER_SIDE_ENCRYPTION: ""
+      AIX_MALWARE_SCAN_ENABLED: "true"
+      AIX_MALWARE_SCAN_BACKEND: clamd
+      AIX_MALWARE_SCAN_HOST: clamav
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: ["aix-worker"]
+    environment:
+      AIX_DATABASE_URL: postgresql+psycopg://aix:${POSTGRES_PASSWORD:-local-aix-password}@postgres:5432/aix
+      AIX_TOKEN_PEPPER: ${AIX_TOKEN_PEPPER:-development-only-change-me}
+      AIX_WEBHOOK_SECRET_PEPPER: ${AIX_WEBHOOK_SECRET_PEPPER:-development-webhook-pepper}
+      AIX_REDIS_URL: redis://redis:6379/0
+      AIX_STORAGE_BACKEND: s3
+      AIX_S3_BUCKET: aix-evidence
+      AIX_S3_ENDPOINT_URL: http://minio:9000
+      AIX_S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-aix-local}
+      AIX_S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-aix-local-secret}
+      AIX_S3_SERVER_SIDE_ENCRYPTION: ""
+      AIX_MALWARE_SCAN_ENABLED: "true"
+      AIX_MALWARE_SCAN_BACKEND: clamd
+      AIX_MALWARE_SCAN_HOST: clamav
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "5173:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  aix-postgres:
+  aix-redis:
+  aix-minio:
+  aix-clamav:

@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: aix-staging
+resources:
+  - ../base
+  - data-services.yaml
+nameSuffix: -staging
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: aix-api
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+images:
+  - name: ghcr.io/example/aix-open
+    newTag: staging
+  - name: ghcr.io/example/aix-web
+    newTag: staging
