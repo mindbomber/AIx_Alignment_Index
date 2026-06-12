@@ -7,8 +7,20 @@ from pathlib import Path
 from aix_platform.app import create_app
 
 
+def canonicalize(document: dict) -> dict:
+    for path_item in document.get("paths", {}).values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            response = operation.get("responses", {}).get("422")
+            if isinstance(response, dict):
+                response["description"] = "Unprocessable Content"
+    return document
+
+
 def render_openapi() -> str:
-    return json.dumps(create_app(create_schema=False).openapi(), indent=2, sort_keys=True) + "\n"
+    document = canonicalize(create_app(create_schema=False).openapi())
+    return json.dumps(document, indent=2, sort_keys=True) + "\n"
 
 
 def main() -> None:
