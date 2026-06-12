@@ -40,3 +40,31 @@ python scripts/deploy_kubernetes.py staging \
 
 GitHub's `deploy` workflow uses protected `staging` and `production`
 environments and expects a base64-encoded kubeconfig in `KUBECONFIG_B64`.
+
+The `staging` GitHub environment also requires:
+
+```text
+KUBECONFIG_B64
+AIX_E2E_ORG
+AIX_E2E_EMAIL
+AIX_E2E_PASSWORD
+```
+
+The kubeconfig principal must be able to create namespaces, workloads, Jobs,
+Pods, ConfigMaps, Services, NetworkPolicies, and HPAs. Before deployment,
+create `aix-secrets-staging` in the `aix-staging` namespace with the values
+listed above. The database principal should be allowed to create and drop the
+temporary `<database>_restore_drill` database used by staging acceptance.
+Private GHCR packages also require a cluster image-pull secret or equivalent
+registry integration.
+
+Publish a release candidate, deploy it, and run acceptance:
+
+```bash
+gh workflow run candidate.yml --ref codex/productize-aix-platform \
+  -f tag=v0.2.0-rc.1
+gh workflow run deploy.yml --ref codex/productize-aix-platform \
+  -f environment=staging -f tag=v0.2.0-rc.1
+gh workflow run staging-acceptance.yml \
+  --ref codex/productize-aix-platform
+```

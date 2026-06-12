@@ -15,6 +15,7 @@ COPY spec ./spec
 COPY papers ./papers
 COPY alembic.ini ./
 COPY migrations ./migrations
+COPY scripts/s3_restore_drill.py ./scripts/s3_restore_drill.py
 RUN python -m pip install ".[platform]"
 
 USER aix
