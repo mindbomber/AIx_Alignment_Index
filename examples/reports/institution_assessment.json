@@ -1,0 +1,102 @@
+{
+  "adjusted_score": 63.65,
+  "balance_category": "well_balanced",
+  "balance_range": 11.18,
+  "confidence": 0.696,
+  "confidence_basis": "evidence_quality_only_single_assessment",
+  "constraint_skew": -2.59,
+  "domain_confidence": {
+    "B": 0.7,
+    "CT": 0.767,
+    "F": 0.733,
+    "H": 0.58,
+    "P": 0.7
+  },
+  "domain_evidence_quality": {
+    "B": 0.7,
+    "CT": 0.767,
+    "F": 0.733,
+    "H": 0.58,
+    "P": 0.7
+  },
+  "domain_floors": {
+    "B": 20.0,
+    "F": 20.0,
+    "P": 20.0
+  },
+  "domain_scores": {
+    "B": 62.86,
+    "CT": 63.48,
+    "F": 67.73,
+    "H": 56.55,
+    "P": 67.62
+  },
+  "dynamics_proxy": {
+    "correction_capacity_proxy": 0.6,
+    "estimate": 0.6,
+    "feedback_fidelity_proxy": 0.6773,
+    "hidden_drift_proxy": 0.0,
+    "interpretation": "Directional ATS bridge only; this is not a measured alignment rate.",
+    "irreversible_loss_proxy": 0.0,
+    "misclassification_proxy": 0.3238,
+    "optimization_pressure_proxy": 0.0
+  },
+  "evidence_quality": 0.696,
+  "failure_modes": [
+    "no_primary_failure_mode_detected"
+  ],
+  "limitations": [
+    "AIx is a structured measurement proposal, not a validated regulatory instrument.",
+    "Ordinal indicator scores and composite decimals must not be treated as false precision.",
+    "The profile, evidence, disagreement, and domain floors take priority over the scalar score."
+  ],
+  "mandatory_review": false,
+  "optimization_pressure": 0.0,
+  "parameter_disclosure": {
+    "eta_e": 0.5,
+    "eta_h": 0.4,
+    "eta_l": 0.6,
+    "eta_p": 0.5,
+    "pi0": 0.3,
+    "pi_max": 1.0,
+    "theta_b": 40.0,
+    "theta_c": 35.0,
+    "theta_e": 50.0,
+    "theta_h": 50.0,
+    "theta_l": 40.0,
+    "theta_p": 15.0
+  },
+  "penalties": {
+    "HEP": 0.0,
+    "LEP": 0.0,
+    "LVP": 0.0,
+    "PCP": 0.0
+  },
+  "pressure_source": "estimated_from_positive_constraint_skew",
+  "raw_arithmetic": 63.65,
+  "raw_geometric": 63.51,
+  "recommendations": [
+    "Maintain monitoring and interpret indicator evidence before the composite."
+  ],
+  "review_reasons": [],
+  "score_band": "generally_aligned",
+  "score_interpretation": "Ordinary use still requires periodic stress testing and audit.",
+  "skew_category": "balanced",
+  "system": {
+    "aggregation_rule": "equal domain weighting",
+    "intended_use": "demonstration only",
+    "name": "Illustrative Public Service Institution",
+    "reference_population": "applicants and staff",
+    "time_horizon": "one year",
+    "type": "institution",
+    "unit_of_analysis": "benefits intake process"
+  },
+  "total_penalty": 0.0,
+  "weights": {
+    "B": 0.2,
+    "CT": 0.2,
+    "F": 0.2,
+    "H": 0.2,
+    "P": 0.2
+  }
+}

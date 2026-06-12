@@ -1,0 +1,5 @@
+name: AIx Education Rubric
+version: 0.1.0
+extends: core
+calibration_note: Evaluate learning, cognitive burden, agency, accessibility, assessment validity, and correction pathways.
+

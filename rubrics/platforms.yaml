@@ -1,0 +1,10 @@
+name: AIx Digital Platforms Rubric
+version: 0.1.0
+extends: core
+context_notes:
+  P: Include factual environment, infrastructure, energy, and operational feasibility.
+  B: Include attention, mental health, autonomy, manipulation, trust, and social cohesion.
+  CT: Include engagement and revenue metrics, policy enforcement, and proxy discipline.
+  H: Include adversarial adaptation, distribution shift, coupling, and systemic tail risks.
+  F: Include experiment observability, audit access, appeals, rollback, and independent research.
+

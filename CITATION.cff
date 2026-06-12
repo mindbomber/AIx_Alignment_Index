@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use AIx Open, cite the software and the Expanded Edition paper."
+title: "AIx Open: Alignment Index Measurement Framework"
+version: 0.1.0
+date-released: 2026-06-12
+license: MIT
+authors:
+  - family-names: Sori
+    given-names: Armando
+preferred-citation:
+  type: article
+  title: "The Alignment Index (AIx) as a Standalone Measurement Pillar: Expanded Edition"
+  authors:
+    - family-names: Sori
+      given-names: Armando
+  year: 2026
+

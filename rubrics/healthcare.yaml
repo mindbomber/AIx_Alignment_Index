@@ -1,0 +1,5 @@
+name: AIx Healthcare Rubric
+version: 0.1.0
+extends: core
+calibration_note: Raise lower-layer floors and severity only after empirical calibration and governance approval.
+

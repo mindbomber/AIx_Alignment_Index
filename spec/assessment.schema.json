@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIx Assessment",
+  "type": "object",
+  "required": ["system", "scores"],
+  "properties": {
+    "system": {
+      "type": "object",
+      "required": ["name", "unit_of_analysis", "reference_population", "time_horizon", "aggregation_rule"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "type": {"type": "string"},
+        "unit_of_analysis": {"type": "string", "minLength": 1},
+        "reference_population": {"type": "string", "minLength": 1},
+        "time_horizon": {"type": "string", "minLength": 1},
+        "aggregation_rule": {"type": "string", "minLength": 1},
+        "intended_use": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "optimization_pressure": {"type": "number", "minimum": 0, "maximum": 1},
+    "rater_agreement": {"type": "number", "minimum": 0, "maximum": 1},
+    "domain_agreement": {
+      "type": "object",
+      "properties": {
+        "P": {"type": "number", "minimum": 0, "maximum": 1},
+        "B": {"type": "number", "minimum": 0, "maximum": 1},
+        "CT": {"type": "number", "minimum": 0, "maximum": 1},
+        "H": {"type": "number", "minimum": 0, "maximum": 1},
+        "F": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "confidence_lambda": {"type": "number", "minimum": 0, "maximum": 1},
+    "hidden_drift": {"type": "number"},
+    "domain_floors": {
+      "type": "object",
+      "properties": {
+        "P": {"type": "number", "minimum": 0, "maximum": 100},
+        "B": {"type": "number", "minimum": 0, "maximum": 100},
+        "F": {"type": "number", "minimum": 0, "maximum": 100}
+      },
+      "additionalProperties": false
+    },
+    "weights": {
+      "type": "object",
+      "required": ["P", "B", "CT", "H", "F"],
+      "properties": {
+        "P": {"type": "number", "minimum": 0},
+        "B": {"type": "number", "minimum": 0},
+        "CT": {"type": "number", "minimum": 0},
+        "H": {"type": "number", "minimum": 0},
+        "F": {"type": "number", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "penalty_parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eta_p": {"type": "number", "minimum": 0},
+        "theta_p": {"type": "number", "minimum": 0},
+        "eta_l": {"type": "number", "minimum": 0},
+        "theta_l": {"type": "number", "minimum": 0},
+        "eta_h": {"type": "number", "minimum": 0},
+        "theta_h": {"type": "number", "minimum": 0},
+        "pi0": {"type": "number", "minimum": 0, "maximum": 1},
+        "pi_max": {"type": "number", "exclusiveMinimum": 0},
+        "eta_e": {"type": "number", "minimum": 0},
+        "theta_e": {"type": "number", "minimum": 0},
+        "theta_b": {"type": "number", "minimum": 0},
+        "theta_c": {"type": "number", "minimum": 0}
+      }
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["score", "evidence_quality"],
+        "properties": {
+          "score": {"type": "number", "minimum": 0, "maximum": 5},
+          "evidence_quality": {"type": "number", "minimum": 0, "maximum": 1},
+          "evidence": {"type": ["string", "array"]},
+          "notes": {"type": "string"}
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

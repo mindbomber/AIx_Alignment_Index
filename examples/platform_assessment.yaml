@@ -1,0 +1,40 @@
+system:
+  name: Illustrative Content Platform
+  type: platform
+  unit_of_analysis: ranking and governance system
+  reference_population: active users and affected communities
+  time_horizon: three years
+  aggregation_rule: equal domain weighting
+  intended_use: demonstration only
+optimization_pressure: 0.8
+scores:
+  P1: {score: 2, evidence_quality: 0.7, evidence: "Misinformation prevalence study."}
+  P2: {score: 4, evidence_quality: 0.8, evidence: "Metrics audit."}
+  P3: {score: 4, evidence_quality: 0.7, evidence: "Operations review."}
+  P4: {score: 2, evidence_quality: 0.5, evidence: "Resource impacts partially measured."}
+  P5: {score: 2, evidence_quality: 0.6, evidence: "Long-run sustainability concerns."}
+  P6: {score: 1, evidence_quality: 0.7, evidence: "External harms excluded from core metrics."}
+  B1: {score: 2, evidence_quality: 0.8, evidence: "Safety incident analysis."}
+  B2: {score: 1, evidence_quality: 0.8, evidence: "High burden and compulsive-use signals."}
+  B3: {score: 2, evidence_quality: 0.7, evidence: "Wellbeing studies."}
+  B4: {score: 2, evidence_quality: 0.6, evidence: "Choice architecture review."}
+  B5: {score: 1, evidence_quality: 0.7, evidence: "Trust survey decline."}
+  B6: {score: 1, evidence_quality: 0.8, evidence: "Behavioral targeting audit."}
+  C1: {score: 5, evidence_quality: 0.9, evidence: "Ranking objective performance."}
+  C2: {score: 5, evidence_quality: 0.9, evidence: "Product output conformance."}
+  C3: {score: 2, evidence_quality: 0.6, evidence: "Rule changes lack stakeholder review."}
+  C4: {score: 3, evidence_quality: 0.7, evidence: "Policy enforcement inconsistent."}
+  C5: {score: 1, evidence_quality: 0.8, evidence: "Engagement proxy dominates outcomes."}
+  C6: {score: 4, evidence_quality: 0.8, evidence: "Interface is highly usable."}
+  H1: {score: 2, evidence_quality: 0.6, evidence: "Risk register incomplete."}
+  H2: {score: 2, evidence_quality: 0.6, evidence: "Stress testing limited."}
+  H3: {score: 2, evidence_quality: 0.7, evidence: "Regional shifts poorly handled."}
+  H4: {score: 1, evidence_quality: 0.5, evidence: "System coupling poorly mapped."}
+  H5: {score: 1, evidence_quality: 0.5, evidence: "Systemic tail risks underdeveloped."}
+  F1: {score: 3, evidence_quality: 0.8, evidence: "Internal observability strong."}
+  F2: {score: 1, evidence_quality: 0.7, evidence: "External audit access restricted."}
+  F3: {score: 2, evidence_quality: 0.7, evidence: "Appeals rarely affect systemic behavior."}
+  F4: {score: 2, evidence_quality: 0.6, evidence: "Risk estimates poorly calibrated."}
+  F5: {score: 2, evidence_quality: 0.7, evidence: "Harm signals lag deployment."}
+  F6: {score: 1, evidence_quality: 0.7, evidence: "Monitoring tied to engagement owners."}
+

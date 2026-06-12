@@ -1,0 +1,5 @@
+name: AIx Legal Systems Rubric
+version: 0.1.0
+extends: core
+calibration_note: Evidence must distinguish legal accuracy, jurisdiction, procedural legitimacy, due process, and appealability.
+

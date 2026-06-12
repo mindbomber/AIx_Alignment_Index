@@ -1,0 +1,69 @@
+{
+  "observations": 9,
+  "systems": 1,
+  "raters": 3,
+  "indicators": 3,
+  "mean_score": 3.222,
+  "standard_deviation": 0.629,
+  "mean_absolute_disagreement": 0.889,
+  "agreement_within_one": 0.889,
+  "quadratic_weighted_kappa": -0.235,
+  "icc_2_1": -0.25,
+  "cronbach_alpha": 0.429,
+  "confidence_lambda": 0.5,
+  "domain_details": [
+    {
+      "domain": "B",
+      "standard_deviation": 0.471,
+      "mean_absolute_disagreement": 0.667,
+      "agreement_within_one": 1.0,
+      "confidence_with_neutral_evidence": 0.75
+    },
+    {
+      "domain": "F",
+      "standard_deviation": 0.816,
+      "mean_absolute_disagreement": 1.333,
+      "agreement_within_one": 0.667,
+      "confidence_with_neutral_evidence": 0.583
+    },
+    {
+      "domain": "P",
+      "standard_deviation": 0.471,
+      "mean_absolute_disagreement": 0.667,
+      "agreement_within_one": 1.0,
+      "confidence_with_neutral_evidence": 0.75
+    }
+  ],
+  "group_details": [
+    {
+      "system_id": "assistant",
+      "indicator": "B1",
+      "raters": 3,
+      "mean": 3.333,
+      "standard_deviation": 0.471,
+      "mean_absolute_disagreement": 0.667,
+      "agreement_within_one": 1.0,
+      "confidence": 0.75
+    },
+    {
+      "system_id": "assistant",
+      "indicator": "F3",
+      "raters": 3,
+      "mean": 3.0,
+      "standard_deviation": 0.816,
+      "mean_absolute_disagreement": 1.333,
+      "agreement_within_one": 0.667,
+      "confidence": 0.583
+    },
+    {
+      "system_id": "assistant",
+      "indicator": "P1",
+      "raters": 3,
+      "mean": 3.333,
+      "standard_deviation": 0.471,
+      "mean_absolute_disagreement": 0.667,
+      "agreement_within_one": 1.0,
+      "confidence": 0.75
+    }
+  ]
+}

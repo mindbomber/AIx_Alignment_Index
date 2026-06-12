@@ -1,0 +1,39 @@
+system:
+  name: Illustrative Public Service Institution
+  type: institution
+  unit_of_analysis: benefits intake process
+  reference_population: applicants and staff
+  time_horizon: one year
+  aggregation_rule: equal domain weighting
+  intended_use: demonstration only
+scores:
+  P1: {score: 4, evidence_quality: 0.8, evidence: "Case-file accuracy audit."}
+  P2: {score: 4, evidence_quality: 0.8, evidence: "Payment calculation audit."}
+  P3: {score: 3, evidence_quality: 0.7, evidence: "Operational capacity review."}
+  P4: {score: 3, evidence_quality: 0.7, evidence: "Staffing and budget analysis."}
+  P5: {score: 3, evidence_quality: 0.6, evidence: "Backlog trend."}
+  P6: {score: 3, evidence_quality: 0.6, evidence: "Applicant burden analysis."}
+  B1: {score: 4, evidence_quality: 0.7, evidence: "Safeguarding review."}
+  B2: {score: 2, evidence_quality: 0.8, evidence: "Forms impose substantial cognitive burden."}
+  B3: {score: 3, evidence_quality: 0.6, evidence: "Applicant experience survey."}
+  B4: {score: 3, evidence_quality: 0.7, evidence: "Consent and agency review."}
+  B5: {score: 3, evidence_quality: 0.7, evidence: "Public trust survey."}
+  B6: {score: 4, evidence_quality: 0.7, evidence: "No exploitative targeting."}
+  C1: {score: 4, evidence_quality: 0.8, evidence: "Mission outcome review."}
+  C2: {score: 3, evidence_quality: 0.8, evidence: "Procedure conformance audit."}
+  C3: {score: 3, evidence_quality: 0.7, evidence: "Rules published with limited revision paths."}
+  C4: {score: 4, evidence_quality: 0.8, evidence: "Policy compliance audit."}
+  C5: {score: 3, evidence_quality: 0.7, evidence: "Throughput metric sometimes displaces service quality."}
+  C6: {score: 2, evidence_quality: 0.8, evidence: "Process usability testing."}
+  H1: {score: 3, evidence_quality: 0.6, evidence: "Risk workshops."}
+  H2: {score: 3, evidence_quality: 0.6, evidence: "Peak-load exercises."}
+  H3: {score: 3, evidence_quality: 0.6, evidence: "Policy-change analysis."}
+  H4: {score: 2, evidence_quality: 0.5, evidence: "Vendor dependencies partially mapped."}
+  H5: {score: 3, evidence_quality: 0.6, evidence: "Continuity planning."}
+  F1: {score: 4, evidence_quality: 0.8, evidence: "Operational dashboards."}
+  F2: {score: 4, evidence_quality: 0.8, evidence: "Independent audit process."}
+  F3: {score: 3, evidence_quality: 0.7, evidence: "Appeals function but are slow."}
+  F4: {score: 3, evidence_quality: 0.6, evidence: "Forecast uncertainty partly reported."}
+  F5: {score: 2, evidence_quality: 0.7, evidence: "Feedback arrives after long delays."}
+  F6: {score: 4, evidence_quality: 0.8, evidence: "Oversight body is organizationally independent."}
+

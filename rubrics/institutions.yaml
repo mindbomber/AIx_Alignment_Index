@@ -1,0 +1,10 @@
+name: AIx Institutions Rubric
+version: 0.1.0
+extends: core
+context_notes:
+  P: Assess staffing, logistics, budgets, material feasibility, and externalized costs.
+  B: Assess safety, access, dignity, burden, trust, and stakeholder agency.
+  CT: Assess mission coherence, procedural legitimacy, policy consistency, and KPI discipline.
+  H: Assess scenario planning, dependencies, tail risks, and institutional blind spots.
+  F: Assess transparency, appeals, audits, correction latency, and monitoring independence.
+

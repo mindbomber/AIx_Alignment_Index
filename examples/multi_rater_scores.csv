@@ -1,0 +1,11 @@
+rater_id,system_id,indicator,score
+r1,assistant,P1,3
+r2,assistant,P1,4
+r3,assistant,P1,3
+r1,assistant,B1,3
+r2,assistant,B1,3
+r3,assistant,B1,4
+r1,assistant,F3,2
+r2,assistant,F3,3
+r3,assistant,F3,4
+

@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aix-open"
+version = "0.1.0"
+description = "Open-source Alignment Index measurement framework"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{name = "SimulateAI Research Group"}]
+keywords = ["alignment", "measurement", "auditing", "ai-safety", "reliability"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = ["PyYAML>=6.0.1", "jsonschema>=4.21"]
+
+[project.optional-dependencies]
+charts = ["matplotlib>=3.8"]
+dev = ["build>=1.2", "pytest>=8", "pytest-cov>=5"]
+
+[project.scripts]
+aix = "aix.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.data-files]
+"share/aix/rubrics" = ["rubrics/*.yaml"]
+"share/aix/spec" = ["spec/*.json", "spec/*.yaml"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["aix"]
+branch = true

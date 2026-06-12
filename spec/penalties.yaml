@@ -1,0 +1,21 @@
+version: 0.1.0
+source: AIx Expanded Edition, Section 8
+parameters_are_calibrated_defaults_not_universal_constants: true
+penalties:
+  PCP:
+    name: Proxy Capture Penalty
+    formula: eta_p * max(0, CT - ((P + B) / 2) - theta_p)
+    defaults: {eta_p: 0.5, theta_p: 15}
+  LVP:
+    name: Layer Violation Penalty
+    formula: eta_l * (max(0, theta_l - P) + max(0, theta_l - B))
+    defaults: {eta_l: 0.6, theta_l: 40}
+  HEP:
+    name: Hidden Exposure Penalty
+    formula: eta_h * max(0, theta_h - H) * max(0, (pi - pi0) / pi_max)
+    defaults: {eta_h: 0.4, theta_h: 50, pi0: 0.3, pi_max: 1.0}
+  LEP:
+    name: Legitimacy Erosion Penalty
+    formula: eta_e * max(0, theta_e - F) if B < theta_b or CT < theta_c else 0
+    defaults: {eta_e: 0.5, theta_e: 50, theta_b: 40, theta_c: 35}
+
