@@ -1,6 +1,9 @@
 name: candidate
 
 on:
+  push:
+    branches:
+      - "codex/**"
   workflow_dispatch:
     inputs:
       tag:
@@ -12,6 +15,9 @@ on:
 permissions:
   contents: read
   packages: write
+
+env:
+  CANDIDATE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || format('candidate-{0}', github.sha) }}
 
 jobs:
   containers:
@@ -29,9 +35,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ inputs.tag }}
+          tags: ghcr.io/${{ github.repository }}:${{ env.CANDIDATE_TAG }}
       - uses: docker/build-push-action@v6
         with:
           context: web
           push: true
-          tags: ghcr.io/${{ github.repository }}-web:${{ inputs.tag }}
+          tags: ghcr.io/${{ github.repository }}-web:${{ env.CANDIDATE_TAG }}
