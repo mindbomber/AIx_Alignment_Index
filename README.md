@@ -43,6 +43,32 @@ aix batch examples --out examples/reports/batch.json
 pytest
 ```
 
+## Platform API
+
+The optional product service adds PostgreSQL persistence, organizations,
+password and OIDC authentication, RBAC, rubric versions, immutable assessment
+workflows, S3-backed evidence, policy gates, audit chains, webhooks, privacy
+workflows, durable report jobs, observability, and a responsive React workspace.
+
+```bash
+python -m pip install -e ".[platform,dev]"
+docker compose up --build
+```
+
+The API is available at `http://localhost:8000`; OpenAPI documentation is at
+`http://localhost:8000/docs`, and the checked-in contract is
+[`spec/openapi.json`](spec/openapi.json). Bootstrap the first owner with
+`POST /v1/bootstrap`.
+Use a unique `AIX_TOKEN_PEPPER` and `POSTGRES_PASSWORD` outside local development.
+
+Architecture and completion criteria are documented in
+[docs/platform-architecture.md](docs/platform-architecture.md) and
+[docs/productization-completion-checklist.md](docs/productization-completion-checklist.md).
+See [docs/platform-api.md](docs/platform-api.md) for API, SDK, OIDC, evidence,
+webhook, export, and retention guidance; see
+[docs/operations-runbook.md](docs/operations-runbook.md) for deployment,
+monitoring, backup, restore, and incident procedures.
+
 ## Core Formulas
 
 For each domain, evidence-quality-weighted indicator scores are normalized to 0-100:
@@ -72,6 +98,7 @@ aix compare FIRST SECOND [--out PATH]
 aix rubric list
 aix rubric show core
 aix reliability RATINGS.csv [--format json|markdown] [--out PATH]
+aix calibrate DATASET.csv [--format json|markdown] [--out PATH]
 aix chart ASSESSMENT [COMPARISON] [--format png|svg|both] [--out-dir DIR]
 aix batch DIRECTORY [--out PATH]
 aix export ASSESSMENT --format json|csv --out PATH
@@ -80,6 +107,7 @@ aix export ASSESSMENT --format json|csv --out PATH
 See the [measurement guide](docs/measurement-guide.md),
 [rubric authoring guide](docs/rubric-authoring.md),
 [reliability guide](docs/reliability.md),
+[calibration guide](docs/calibration.md),
 [use cases](docs/use-cases.md),
 [ATS dynamics bridge](docs/ats-dynamics-bridge.md), and
 [validation roadmap](docs/validation-roadmap.md).

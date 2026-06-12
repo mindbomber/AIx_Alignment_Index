@@ -11,4 +11,15 @@ build/
 dist/
 *.whl
 *.tar.gz
-
+*.db
+data/evidence/
+.env
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+clients/typescript/node_modules/
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log

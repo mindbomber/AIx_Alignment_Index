@@ -1,0 +1,32 @@
+groups:
+  - name: aix-platform
+    rules:
+      - alert: AIxApiHighErrorRate
+        expr: |
+          sum(rate(aix_http_requests_total{status=~"5.."}[10m]))
+          /
+          clamp_min(sum(rate(aix_http_requests_total[10m])), 0.001)
+          > 0.02
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: AIx API 5xx rate exceeds 2%
+      - alert: AIxApiHighLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(aix_http_request_duration_seconds_bucket[15m]))
+          ) > 1
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: AIx API p95 latency exceeds one second
+      - alert: AIxApiUnavailable
+        expr: up{job="aix-api"} == 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: AIx API scrape target is unavailable

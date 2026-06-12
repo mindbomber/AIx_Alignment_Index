@@ -1,0 +1,4 @@
+rater_id,system_id,indicator,score
+rater-001,case-001,P1,4
+rater-002,case-001,P1,3
+rater-003,case-001,P1,4

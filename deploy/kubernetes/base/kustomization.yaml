@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - platform.yaml
+configMapGenerator:
+  - name: aix-config
+    literals:
+      - AIX_ENVIRONMENT=production
+      - AIX_STORAGE_BACKEND=s3
+      - AIX_RATE_LIMIT_ENABLED=true
+      - AIX_MALWARE_SCAN_ENABLED=true
+      - AIX_MALWARE_SCAN_BACKEND=clamd
+      - AIX_MALWARE_SCAN_HOST=127.0.0.1
+      - AIX_SESSION_IDLE_MINUTES=60
+      - AIX_SESSION_TOUCH_INTERVAL_SECONDS=300
+      - AIX_MAX_SESSIONS_PER_USER=10
+      - AIX_JOB_QUEUE_NAME=aix:jobs
+      - AIX_AUTO_CREATE_SCHEMA=false
+      - AIX_LOG_LEVEL=INFO
+images:
+  - name: ghcr.io/example/aix-open
+    newTag: replace-with-release-tag
+  - name: ghcr.io/example/aix-web
+    newTag: replace-with-release-tag

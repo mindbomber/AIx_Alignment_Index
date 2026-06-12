@@ -3,6 +3,23 @@ on:
   push:
   pull_request:
 jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install build
+      - name: Verify reproducible distributions
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
+          python -m build --outdir build-a
+          python scripts/normalize_sdist.py build-a/*.tar.gz
+          python -m build --outdir build-b
+          python scripts/normalize_sdist.py build-b/*.tar.gz
+          diff <(cd build-a && sha256sum * | sort) <(cd build-b && sha256sum * | sort)
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -13,5 +30,170 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -e ".[dev,charts]"
-      - run: pytest --cov=aix --cov-report=term-missing --cov-fail-under=80
+      - run: python -m pip install -e ".[dev,charts,platform]"
+      - run: python scripts/export_openapi.py --check
+      - run: python scripts/generate_api_clients.py --check
+      - run: pytest --cov=aix --cov=aix_platform --cov-report=term-missing --cov-fail-under=80
+      - run: |
+          AIX_DATABASE_URL=sqlite:///./migration-ci.db alembic upgrade head
+          AIX_DATABASE_URL=sqlite:///./migration-ci.db alembic check
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: aix
+          POSTGRES_PASSWORD: aix-test-password
+          POSTGRES_DB: aix
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aix"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      AIX_DATABASE_URL: postgresql+psycopg://aix:aix-test-password@localhost:5432/aix
+      AIX_TOKEN_PEPPER: ci-only-token-pepper
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -e ".[dev,platform]"
+      - run: alembic upgrade head
+      - run: alembic check
+      - run: python scripts/seed_e2e.py
+      - name: Restore drill
+        env:
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGUSER: aix
+          PGPASSWORD: aix-test-password
+          PGDATABASE: aix
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+          bash scripts/restore_drill.sh
+      - run: alembic downgrade base
+
+  web:
+    runs-on: ubuntu-latest
+    env:
+      AIX_DATABASE_URL: sqlite:///./e2e-ci.db
+      AIX_TOKEN_PEPPER: browser-test-token-pepper
+      AIX_CORS_ORIGINS: http://127.0.0.1:5173
+      AIX_E2E_PASSWORD: browser-test-password
+      AIX_RATE_LIMIT_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: python -m pip install -e ".[platform]"
+      - run: alembic upgrade head
+      - run: python scripts/seed_e2e.py
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: |
+          python -m uvicorn aix_platform.main:app --host 127.0.0.1 --port 8000 &
+          npm --prefix web run dev -- --host 127.0.0.1 &
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8000/health/ready &&
+              curl --fail --silent http://127.0.0.1:5173 >/dev/null &&
+              exit 0
+            sleep 1
+          done
+          exit 1
+      - run: npm run lint
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: npm install
+        working-directory: clients/typescript
+      - run: npm run check
+        working-directory: clients/typescript
+      - run: npm run test:e2e
+        working-directory: web
+      - name: Live security probes
+        run: python scripts/security_probe.py --password browser-test-password
+      - name: Authenticated load gate
+        run: |
+          TOKEN="$(
+            python -c "import httpx; print(httpx.post('http://127.0.0.1:8000/v1/auth/login', json={'organization_slug':'aix-research','email':'owner@example.com','password':'browser-test-password'}).json()['access_token'])"
+          )"
+          python scripts/load_smoke.py \
+            --token "$TOKEN" \
+            --requests 500 \
+            --concurrency 25 \
+            --max-error-rate 0.01 \
+            --max-p95-ms 1500
+
+  object-storage-dr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install boto3 cryptography
+      - name: Start isolated MinIO
+        run: |
+          docker run --detach --rm \
+            --name aix-minio-dr \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=aix-dr \
+            -e MINIO_ROOT_PASSWORD=aix-dr-secret \
+            quay.io/minio/minio:latest server /data
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:9000/minio/health/ready &&
+              exit 0
+            sleep 1
+          done
+          docker logs aix-minio-dr
+          exit 1
+      - name: Exercise encrypted object restore
+        env:
+          AWS_ACCESS_KEY_ID: aix-dr
+          AWS_SECRET_ACCESS_KEY: aix-dr-secret
+        run: |
+          python scripts/s3_restore_drill.py \
+            --bucket aix-drill \
+            --endpoint-url http://127.0.0.1:9000
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate Compose model
+        run: docker compose config --quiet
+      - name: Validate Kubernetes overlays
+        run: |
+          for environment in staging production; do
+            kubectl kustomize "deploy/kubernetes/$environment" |
+              docker run --rm -i ghcr.io/yannh/kubeconform:v0.8.0 \
+                -strict -summary -ignore-missing-schemas
+          done
+      - name: Validate Terraform
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work/deploy/terraform/aws \
+            hashicorp/terraform:1.9.5 init -backend=false
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work/deploy/terraform/aws \
+            hashicorp/terraform:1.9.5 fmt -check
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work/deploy/terraform/aws \
+            hashicorp/terraform:1.9.5 validate
