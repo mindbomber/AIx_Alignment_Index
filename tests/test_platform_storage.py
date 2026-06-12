@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -67,10 +66,23 @@ def test_store_upload_hashes_and_enforces_limit(tmp_path):
 
 
 def test_store_upload_rejects_malware_before_storage(tmp_path, monkeypatch):
+    class InfectedConnection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def sendall(self, value):
+            return None
+
+        def recv(self, size):
+            return b"stream: Eicar-Signature FOUND\0"
+
     store = LocalObjectStore(tmp_path / "objects")
     monkeypatch.setattr(
-        "aix_platform.storage.subprocess.run",
-        lambda *args, **kwargs: SimpleNamespace(returncode=1),
+        "aix_platform.storage.socket.create_connection",
+        lambda *args, **kwargs: InfectedConnection(),
     )
     settings = Settings(
         token_pepper="test-token-pepper-value",

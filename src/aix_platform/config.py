@@ -33,8 +33,7 @@ class Settings(BaseSettings):
     storage_path: Path = Path("./data/evidence")
     storage_max_bytes: int = Field(default=25 * 1024 * 1024, ge=1024)
     malware_scan_enabled: bool = False
-    malware_scan_backend: str = "command"
-    malware_scan_command: str = "clamscan"
+    malware_scan_backend: str = "clamd"
     malware_scan_host: str = "127.0.0.1"
     malware_scan_port: int = Field(default=3310, ge=1, le=65535)
     malware_scan_timeout_seconds: int = Field(default=60, ge=1, le=600)
@@ -75,8 +74,8 @@ class Settings(BaseSettings):
     def validate_deployment(self) -> "Settings":
         if self.storage_backend not in {"local", "s3"}:
             raise ValueError("storage_backend must be local or s3")
-        if self.malware_scan_backend not in {"command", "clamd"}:
-            raise ValueError("malware_scan_backend must be command or clamd")
+        if self.malware_scan_backend != "clamd":
+            raise ValueError("malware_scan_backend must be clamd")
         if self.storage_backend == "s3" and not self.s3_bucket:
             raise ValueError("s3_bucket is required when storage_backend=s3")
         if self.s3_server_side_encryption == "aws:kms" and not self.s3_kms_key_id:

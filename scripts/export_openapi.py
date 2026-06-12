@@ -19,7 +19,15 @@ def main() -> None:
     destination = Path(args.out)
     rendered = render_openapi()
     if args.check:
-        if not destination.is_file() or destination.read_text(encoding="utf-8") != rendered:
+        if not destination.is_file():
+            raise SystemExit(
+                f"{destination} is stale; run python scripts/export_openapi.py"
+            )
+        try:
+            current = json.loads(destination.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"{destination} is not valid JSON: {exc}") from exc
+        if current != json.loads(rendered):
             raise SystemExit(
                 f"{destination} is stale; run python scripts/export_openapi.py"
             )

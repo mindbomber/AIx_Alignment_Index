@@ -7,7 +7,6 @@ from pathlib import Path
 import re
 import socket
 import struct
-import subprocess
 import tempfile
 from typing import BinaryIO, Protocol
 from uuid import uuid4
@@ -157,38 +156,23 @@ def store_upload(
 
 
 def scan_file(path: Path, settings: Settings) -> None:
-    if settings.malware_scan_backend == "clamd":
-        try:
-            with socket.create_connection(
-                (settings.malware_scan_host, settings.malware_scan_port),
-                timeout=settings.malware_scan_timeout_seconds,
-            ) as connection:
-                connection.sendall(b"zINSTREAM\0")
-                with path.open("rb") as source:
-                    while chunk := source.read(CHUNK_SIZE):
-                        connection.sendall(struct.pack(">I", len(chunk)) + chunk)
-                connection.sendall(struct.pack(">I", 0))
-                response = connection.recv(4096).decode(errors="replace")
-        except OSError as exc:
-            raise RuntimeError("Malware scanner connection failed") from exc
-        if " FOUND" in response:
-            raise ValueError("Evidence file failed malware scanning")
-        if " OK" not in response:
-            raise RuntimeError(f"Malware scanner returned: {response.strip()}")
-        return
-    result = subprocess.run(
-        [settings.malware_scan_command, "--no-summary", str(path)],
-        capture_output=True,
-        text=True,
-        timeout=settings.malware_scan_timeout_seconds,
-        check=False,
-    )
-    if result.returncode == 1:
+    try:
+        with socket.create_connection(
+            (settings.malware_scan_host, settings.malware_scan_port),
+            timeout=settings.malware_scan_timeout_seconds,
+        ) as connection:
+            connection.sendall(b"zINSTREAM\0")
+            with path.open("rb") as source:
+                while chunk := source.read(CHUNK_SIZE):
+                    connection.sendall(struct.pack(">I", len(chunk)) + chunk)
+            connection.sendall(struct.pack(">I", 0))
+            response = connection.recv(4096).decode(errors="replace")
+    except OSError as exc:
+        raise RuntimeError("Malware scanner connection failed") from exc
+    if " FOUND" in response:
         raise ValueError("Evidence file failed malware scanning")
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"Malware scanner failed with exit code {result.returncode}"
-        )
+    if " OK" not in response:
+        raise RuntimeError(f"Malware scanner returned: {response.strip()}")
 
 
 def iter_file(handle: BinaryIO) -> Iterator[bytes]:
