@@ -12,6 +12,15 @@ and basic multi-rater reliability statistics.
 > Project status: research alpha. AIx is not yet a validated psychometric, regulatory,
 > certification, or safety instrument.
 
+## Paper
+
+The foundational paper is included in the repository:
+
+- [The Alignment Index (AIx) as a Standalone Measurement Pillar: Expanded Edition](papers/AIx_Expanded_Edition.pdf)
+
+See [papers/README.md](papers/README.md) for citation, provenance, checksum, and
+licensing boundaries.
+
 ## Domains
 
 | Code | Domain | Core question |
@@ -94,4 +103,6 @@ AIx does not require AANA and must not imply that measurement alone corrects a s
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+The software is MIT licensed. See [LICENSE](LICENSE). The included research paper is a
+separate authored publication and is not automatically covered by the software license;
+see [papers/README.md](papers/README.md).

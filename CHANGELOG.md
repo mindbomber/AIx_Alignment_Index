@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 - 2026-06-12
+
+- Included the Expanded Edition foundational paper in `papers/`.
+- Added paper provenance, SHA-256 verification, citation, and licensing-boundary notes.
+- Included the paper in source distributions and release archives.
+
 ## 0.1.0 - 2026-06-12
 
 Initial research-alpha MVP:
@@ -14,4 +20,3 @@ Initial research-alpha MVP:
 - PNG/SVG domain, radar, penalty, skew, and before/after charts
 - four assessments including the Expanded Edition worked example
 - executable notebook, tests, CI, documentation, and release tooling
-

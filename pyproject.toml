@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aix-open"
-version = "0.1.0"
+version = "0.1.1"
 description = "Open-source Alignment Index measurement framework"
 readme = "README.md"
 license = "MIT"
@@ -34,6 +34,7 @@ where = ["src"]
 [tool.setuptools.data-files]
 "share/aix/rubrics" = ["rubrics/*.yaml"]
 "share/aix/spec" = ["spec/*.json", "spec/*.yaml"]
+"share/aix/papers" = ["papers/*.pdf", "papers/*.md"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

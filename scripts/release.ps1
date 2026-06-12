@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "0.1.0"
+    [string]$Version = "0.1.1"
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,7 +19,7 @@ try {
         Remove-Item -LiteralPath $Archive -Force
     }
     $Items = @(
-        ".github", "docs", "examples", "notebooks", "rubrics", "scripts", "spec",
+        ".github", "docs", "examples", "notebooks", "papers", "rubrics", "scripts", "spec",
         "src", "tests", ".gitignore", "CHANGELOG.md", "CITATION.cff",
         "CODE_OF_CONDUCT.md", "CONTRIBUTING.md", "LICENSE", "MANIFEST.in",
         "pyproject.toml", "README.md", "SECURITY.md"
@@ -30,4 +30,3 @@ try {
 finally {
     Pop-Location
 }
-

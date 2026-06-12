@@ -11,6 +11,7 @@ This checklist maps the Expanded Edition, the engineering scope, and the referen
 - [x] Wheel and source distribution build
 - [x] GitHub Actions test matrix
 - [x] Release archive command and generated v0.1 artifacts
+- [x] Foundational paper included with citation, provenance, checksum, and separate licensing notice
 
 ## Measurement
 
@@ -66,4 +67,3 @@ This checklist maps the Expanded Edition, the engineering scope, and the referen
 - [x] Cross-domain use cases
 - [x] Limitations, anti-Goodhart guidance, and parameter transparency
 - [x] Explicit research-alpha and non-certification warnings
-
