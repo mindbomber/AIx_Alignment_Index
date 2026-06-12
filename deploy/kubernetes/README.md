@@ -58,6 +58,15 @@ temporary `<database>_restore_drill` database used by staging acceptance.
 Private GHCR packages also require a cluster image-pull secret or equivalent
 registry integration.
 
+After copying `.env.staging.example` to the ignored `.env.staging` file and
+filling its values, configure both Kubernetes and GitHub in one command:
+
+```powershell
+.\scripts\configure_staging.ps1 -EnvFile .env.staging
+```
+
+Use `-KubeContext CONTEXT_NAME` when the desired cluster is not already active.
+
 Publish a release candidate, deploy it, and run acceptance:
 
 ```bash
