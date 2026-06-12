@@ -74,12 +74,31 @@ def main() -> int:
         return 0
 
     namespace = f"aix-{args.environment}"
-    migration = next(document for document in documents if document["kind"] == "Job")
+    migration = next(
+        document
+        for document in documents
+        if document["kind"] == "Job"
+        and document["metadata"]["name"].startswith("aix-migrate-")
+    )
     migration_name = migration["metadata"]["name"]
     prerequisites = [
         document
         for document in documents
         if document["kind"] in {"ConfigMap", "ServiceAccount"}
+        or document.get("metadata", {})
+        .get("annotations", {})
+        .get("aix.dev/deployment-phase")
+        == "prerequisite"
+    ]
+    prerequisite_statefulsets = [
+        document["metadata"]["name"]
+        for document in prerequisites
+        if document["kind"] == "StatefulSet"
+    ]
+    prerequisite_jobs = [
+        document["metadata"]["name"]
+        for document in prerequisites
+        if document["kind"] == "Job"
     ]
     with tempfile.TemporaryDirectory() as directory:
         directory_path = Path(directory)
@@ -91,6 +110,24 @@ def main() -> int:
         write_documents(all_file, documents)
         ensure_namespace(namespace)
         kubectl("apply", "-f", str(prerequisite_file))
+        for statefulset in prerequisite_statefulsets:
+            kubectl(
+                "rollout",
+                "status",
+                f"statefulset/{statefulset}",
+                "-n",
+                namespace,
+                "--timeout=10m",
+            )
+        for job in prerequisite_jobs:
+            kubectl(
+                "wait",
+                "--for=condition=complete",
+                f"job/{job}",
+                "-n",
+                namespace,
+                "--timeout=10m",
+            )
         kubectl(
             "delete",
             "job",

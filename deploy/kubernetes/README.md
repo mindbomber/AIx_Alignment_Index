@@ -50,9 +50,9 @@ AIX_E2E_EMAIL
 AIX_E2E_PASSWORD
 ```
 
-The kubeconfig principal must be able to create namespaces, workloads, Jobs,
-Pods, ConfigMaps, Services, NetworkPolicies, and HPAs. Before deployment,
-create `aix-secrets-staging` in the `aix-staging` namespace with the values
+The configurator creates a namespace-scoped `aix-deployer` service account and
+stores its kubeconfig in GitHub. Before deployment,
+create `aix-secrets` in the `aix-staging` namespace with the values
 listed above. The database principal should be allowed to create and drop the
 temporary `<database>_restore_drill` database used by staging acceptance.
 Private GHCR packages also require a cluster image-pull secret or equivalent

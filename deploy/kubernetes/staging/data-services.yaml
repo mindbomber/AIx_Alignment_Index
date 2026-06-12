@@ -1,0 +1,280 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aix-postgres
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  selector:
+    app: aix-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aix-postgres
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  serviceName: aix-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aix-postgres
+  template:
+    metadata:
+      labels:
+        app: aix-postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: aix
+            - name: POSTGRES_USER
+              value: aix
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aix-secrets
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "aix", "-d", "aix"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 750m
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard-rwo
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aix-redis
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  selector:
+    app: aix-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aix-redis
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  serviceName: aix-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aix-redis
+  template:
+    metadata:
+      labels:
+        app: aix-redis
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--appendonly", "yes"]
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard-rwo
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aix-minio
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  selector:
+    app: aix-minio
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: s3
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aix-minio
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  serviceName: aix-minio
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aix-minio
+  template:
+    metadata:
+      labels:
+        app: aix-minio
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:latest
+          args: ["server", "/data"]
+          ports:
+            - name: s3
+              containerPort: 9000
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: aix-secrets
+                  key: AIX_S3_ACCESS_KEY_ID
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aix-secrets
+                  key: AIX_S3_SECRET_ACCESS_KEY
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: s3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 750m
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard-rwo
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aix-staging-data-services
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["aix-postgres", "aix-redis", "aix-minio"]
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: aix-staging
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 9000
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: aix-minio-bootstrap
+  annotations:
+    aix.dev/deployment-phase: prerequisite
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: minio-bootstrap
+          image: quay.io/minio/mc:latest
+          env:
+            - name: AIX_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: aix-secrets
+                  key: AIX_S3_BUCKET
+            - name: AIX_S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aix-secrets
+                  key: AIX_S3_ACCESS_KEY_ID
+            - name: AIX_S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aix-secrets
+                  key: AIX_S3_SECRET_ACCESS_KEY
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              until mc alias set staging http://aix-minio-staging:9000 \
+                "$AIX_S3_ACCESS_KEY_ID" "$AIX_S3_SECRET_ACCESS_KEY"; do
+                sleep 2
+              done
+              mc mb --ignore-existing "staging/$AIX_S3_BUCKET"

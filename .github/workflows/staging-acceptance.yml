@@ -109,7 +109,7 @@ jobs:
                   - name: AIX_DATABASE_URL
                     valueFrom:
                       secretKeyRef:
-                        name: aix-secrets-staging
+                        name: aix-secrets
                         key: AIX_DATABASE_URL
                 command: ["/bin/sh", "-ec"]
                 args:

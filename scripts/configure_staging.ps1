@@ -51,6 +51,101 @@ function Set-GitHubEnvironmentSecret {
     }
 }
 
+function Invoke-KubectlApply {
+    param([string[]]$Arguments)
+
+    & kubectl @Arguments | kubectl apply -f - | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "kubectl apply failed."
+    }
+}
+
+function New-StagingDeployerKubeconfig {
+    Invoke-KubectlApply -Arguments @(
+        "create", "serviceaccount", "aix-deployer",
+        "--namespace", "aix-staging",
+        "--dry-run=client", "-o", "yaml"
+    )
+    Invoke-KubectlApply -Arguments @(
+        "create", "rolebinding", "aix-deployer-admin",
+        "--namespace", "aix-staging",
+        "--clusterrole", "admin",
+        "--serviceaccount", "aix-staging:aix-deployer",
+        "--dry-run=client", "-o", "yaml"
+    )
+    Invoke-KubectlApply -Arguments @(
+        "create", "clusterrole", "aix-staging-namespace-reader",
+        "--verb", "get",
+        "--resource", "namespaces",
+        "--dry-run=client", "-o", "yaml"
+    )
+    Invoke-KubectlApply -Arguments @(
+        "create", "clusterrolebinding", "aix-staging-namespace-reader",
+        "--clusterrole", "aix-staging-namespace-reader",
+        "--serviceaccount", "aix-staging:aix-deployer",
+        "--dry-run=client", "-o", "yaml"
+    )
+
+    @"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aix-deployer-token
+  namespace: aix-staging
+  annotations:
+    kubernetes.io/service-account.name: aix-deployer
+type: kubernetes.io/service-account-token
+"@ | kubectl apply -f - | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to create the staging deployer token."
+    }
+
+    $token = ""
+    for ($attempt = 0; $attempt -lt 30 -and -not $token; $attempt++) {
+        $token = kubectl get secret aix-deployer-token `
+            --namespace aix-staging `
+            -o jsonpath='{.data.token}'
+        if (-not $token) {
+            Start-Sleep -Seconds 1
+        }
+    }
+    if (-not $token) {
+        throw "The staging deployer token was not populated."
+    }
+    $decodedToken = [Text.Encoding]::UTF8.GetString(
+        [Convert]::FromBase64String($token)
+    )
+    $certificateAuthority = kubectl get secret aix-deployer-token `
+        --namespace aix-staging `
+        -o jsonpath='{.data.ca\.crt}'
+    $server = kubectl config view --minify `
+        -o jsonpath='{.clusters[0].cluster.server}'
+    if (-not $certificateAuthority -or -not $server) {
+        throw "Unable to read the cluster endpoint or certificate authority."
+    }
+
+    return @"
+apiVersion: v1
+kind: Config
+clusters:
+  - name: aix-staging
+    cluster:
+      server: $server
+      certificate-authority-data: $certificateAuthority
+users:
+  - name: aix-deployer
+    user:
+      token: $decodedToken
+contexts:
+  - name: aix-staging
+    context:
+      cluster: aix-staging
+      namespace: aix-staging
+      user: aix-deployer
+current-context: aix-staging
+"@
+}
+
 $values = Read-EnvironmentFile -Path $EnvFile
 $requiredApplicationValues = @(
     "AIX_DATABASE_URL",
@@ -59,8 +154,8 @@ $requiredApplicationValues = @(
     "AIX_WEBHOOK_SECRET_PEPPER",
     "AIX_S3_BUCKET",
     "AIX_S3_REGION",
-    "AIX_S3_SERVER_SIDE_ENCRYPTION",
-    "AIX_CORS_ORIGINS"
+    "AIX_CORS_ORIGINS",
+    "POSTGRES_PASSWORD"
 )
 $requiredAcceptanceValues = @(
     "AIX_E2E_ORG",
@@ -89,14 +184,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $secretArguments = @(
-    "create", "secret", "generic", "aix-secrets-staging",
+    "create", "secret", "generic", "aix-secrets",
     "--namespace", "aix-staging"
 )
 $applicationNames = @(
-    $requiredApplicationValues
+    $requiredApplicationValues,
     "AIX_S3_ENDPOINT_URL",
     "AIX_S3_ACCESS_KEY_ID",
     "AIX_S3_SECRET_ACCESS_KEY",
+    "AIX_S3_SERVER_SIDE_ENCRYPTION",
     "AIX_S3_KMS_KEY_ID",
     "AIX_OTLP_ENDPOINT",
     "AIX_OIDC_ISSUER",
@@ -113,14 +209,11 @@ foreach ($name in $applicationNames) {
 $secretArguments += @("--dry-run=client", "-o", "yaml")
 & kubectl @secretArguments | kubectl apply -f - | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    throw "Unable to create or update aix-secrets-staging."
+    throw "Unable to create or update aix-secrets."
 }
 
-$flattenedKubeconfig = kubectl config view --minify --flatten --raw
-if ($LASTEXITCODE -ne 0) {
-    throw "Unable to export the active Kubernetes context."
-}
-$kubeconfigBytes = [Text.Encoding]::UTF8.GetBytes(($flattenedKubeconfig -join "`n"))
+$deployerKubeconfig = New-StagingDeployerKubeconfig
+$kubeconfigBytes = [Text.Encoding]::UTF8.GetBytes($deployerKubeconfig)
 $kubeconfigBase64 = [Convert]::ToBase64String($kubeconfigBytes)
 
 Set-GitHubEnvironmentSecret -Name "KUBECONFIG_B64" -Value $kubeconfigBase64
